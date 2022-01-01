@@ -34,10 +34,6 @@
 #endif
 
 /* Initialization/Cleanup routines */
-#if !SDL_JOYSTICK_DISABLED
-extern int  SDL_JoystickInit(void);
-extern void SDL_JoystickQuit(void);
-#endif
 #if !SDL_CDROM_DISABLED
 extern int  SDL_CDROMInit(void);
 extern void SDL_CDROMQuit(void);
@@ -114,22 +110,6 @@ int SDL_InitSubSystem(Uint32 flags)
 	}
 #endif
 
-#if !SDL_JOYSTICK_DISABLED
-	/* Initialize the joystick subsystem */
-	if ( (flags & SDL_INIT_JOYSTICK) &&
-	     !(SDL_initialized & SDL_INIT_JOYSTICK) ) {
-		if ( SDL_JoystickInit() < 0 ) {
-			return(-1);
-		}
-		SDL_initialized |= SDL_INIT_JOYSTICK;
-	}
-#else
-	if ( flags & SDL_INIT_JOYSTICK ) {
-		SDL_SetError("SDL not built with joystick support");
-		return(-1);
-	}
-#endif
-
 #if !SDL_CDROM_DISABLED
 	/* Initialize the CD-ROM subsystem */
 	if ( (flags & SDL_INIT_CDROM) && !(SDL_initialized & SDL_INIT_CDROM) ) {
@@ -179,12 +159,7 @@ void SDL_QuitSubSystem(Uint32 flags)
 		SDL_initialized &= ~SDL_INIT_CDROM;
 	}
 #endif
-#if !SDL_JOYSTICK_DISABLED
-	if ( (flags & SDL_initialized & SDL_INIT_JOYSTICK) ) {
-		SDL_JoystickQuit();
-		SDL_initialized &= ~SDL_INIT_JOYSTICK;
-	}
-#endif
+
 #if !SDL_TIMERS_DISABLED
 	if ( (flags & SDL_initialized & SDL_INIT_TIMER) ) {
 		SDL_TimerQuit();

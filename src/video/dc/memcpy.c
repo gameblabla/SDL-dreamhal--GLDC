@@ -13,10 +13,10 @@
 
 void * memcpy_ (void *dest, const void *src, size_t len)
 {
-  if(!len)
+  /*if(!len)
   {
     return dest;
-  }
+  }*/
 
   const uint8_t *s = (uint8_t *)src;
   uint8_t *d = (uint8_t *)dest;
@@ -47,10 +47,10 @@ void * memcpy_ (void *dest, const void *src, size_t len)
 
 void * memcpy_16bit(void *dest, const void *src, size_t len)
 {
-  if(!len)
+ /* if(!len)
   {
     return dest;
-  }
+  }*/
 
   const uint16_t* s = (uint16_t*)src;
   uint16_t* d = (uint16_t*)dest;
@@ -81,10 +81,10 @@ void * memcpy_16bit(void *dest, const void *src, size_t len)
 
 void * memcpy_32bit(void *dest, const void *src, size_t len)
 {
-  if(!len)
+  /*if(!len)
   {
     return dest;
-  }
+  }*/
 
   const uint32_t* s = (uint32_t*)src;
   uint32_t* d = (uint32_t*)dest;
@@ -115,10 +115,10 @@ void * memcpy_32bit(void *dest, const void *src, size_t len)
 
 void * memcpy_64bit(void *dest, const void *src, size_t len)
 {
-  if(!len)
+  /*if(!len)
   {
     return dest;
-  }
+  }*/
 
   const _Complex float* s = (_Complex float*)src;
   _Complex float* d = (_Complex float*)dest;
@@ -154,10 +154,10 @@ void * memcpy_32bit_16Bytes(void *dest, const void *src, size_t len)
 {
   void * ret_dest = dest;
 
-  if(!len)
+  /*if(!len)
   {
     return ret_dest;
-  }
+  }*/
 
   uint32_t scratch_reg;
   uint32_t scratch_reg2;
@@ -200,10 +200,10 @@ void * memcpy_64bit_32Bytes(void *dest, const void *src, size_t len)
 {
   void * ret_dest = dest;
 
-  if(!len)
+ /* if(!len)
   {
     return ret_dest;
-  }
+  }*/
 
   _Complex float double_scratch;
   _Complex float double_scratch2;

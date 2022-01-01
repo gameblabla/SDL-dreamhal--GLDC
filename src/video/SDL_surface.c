@@ -46,11 +46,11 @@ SDL_Surface * SDL_CreateRGBSurface (Uint32 flags,
 
 	/* Make sure the size requested doesn't overflow our datatypes */
 	/* Next time I write a library like SDL, I'll use int for size. :) */
-	if ( width >= 16384 || height >= 65536 ) {
+	/*if ( width >= 16384 || height >= 65536 ) {
 		SDL_SetError("Width or height is too large");
 		return(NULL);
 	}
-
+*/
 	/* Check to see if we desire the surface in video memory */
 	if ( video ) {
 		screen = SDL_PublicSurface;
@@ -566,22 +566,6 @@ int SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, Uint32 color)
 	SDL_VideoDevice *this  = current_video;
 	int x, y;
 	Uint8 *row;
-
-	/* This function doesn't work on surfaces < 8 bpp */
-	if ( dst->format->BitsPerPixel < 8 ) {
-		switch(dst->format->BitsPerPixel) {
-		    case 1:
-			return SDL_FillRect1(dst, dstrect, color);
-			break;
-		    case 4:
-			return SDL_FillRect4(dst, dstrect, color);
-			break;
-		    default:
-			SDL_SetError("Fill rect on unsupported surface format");
-			return(-1);
-			break;
-		}
-	}
 
 	/* If 'dstrect' == NULL, then fill the whole surface */
 	if ( dstrect ) {

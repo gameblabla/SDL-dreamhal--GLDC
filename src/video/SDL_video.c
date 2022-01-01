@@ -27,7 +27,6 @@
 #include "SDL_sysvideo.h"
 #include "SDL_blit.h"
 #include "SDL_pixels_c.h"
-#include "SDL_cursor_c.h"
 #include "../events/SDL_sysevents.h"
 #include "../events/SDL_events_c.h"
 
@@ -119,9 +118,6 @@ static VideoBootStrap *bootstrap[] = {
 #endif
 #if SDL_VIDEO_DRIVER_AALIB
 	&AALIB_bootstrap,
-#endif
-#if SDL_VIDEO_DRIVER_DUMMY
-	&DUMMY_bootstrap,
 #endif
 	NULL
 };
@@ -266,13 +262,6 @@ int SDL_VideoInit (const char *driver_name, Uint32 flags)
 	}
 #endif
 	video->info.vfmt = SDL_VideoSurface->format;
-
-	/* Start the event loop */
-	if ( SDL_StartEventLoop(flags) < 0 ) {
-		SDL_VideoQuit();
-		return(-1);
-	}
-	SDL_CursorInit(flags & SDL_INIT_EVENTTHREAD);
 
 	/* We're ready to go! */
 	return(0);
@@ -631,10 +620,6 @@ SDL_Surface * SDL_SetVideoMode (int width, int height, int bpp, Uint32 flags)
 		flags &= ~(SDL_HWSURFACE|SDL_DOUBLEBUF);
 	}
 
-	/* Reset the keyboard here so event callbacks can run */
-	SDL_ResetKeyboard();
-	SDL_ResetMouse();
-	SDL_cursorstate &= ~CURSOR_USINGSW;
 
 	/* Clean up any previous video mode */
 	if ( SDL_PublicSurface != NULL ) {
@@ -661,7 +646,6 @@ SDL_Surface * SDL_SetVideoMode (int width, int height, int bpp, Uint32 flags)
 
 	/* Try to set the video mode, along with offset and clipping */
 	prev_mode = SDL_VideoSurface;
-	SDL_LockCursor();
 	SDL_VideoSurface = NULL;	/* In case it's freed by driver */
 	mode = video->SetVideoMode(this, prev_mode,video_w,video_h,video_bpp,flags);
 	if ( mode ) { /* Prevent resize events from mode change */
@@ -726,8 +710,6 @@ SDL_Surface * SDL_SetVideoMode (int width, int height, int bpp, Uint32 flags)
 		mode->h = height;
 		SDL_SetClipRect(mode, NULL);
 	}
-	SDL_ResetCursor();
-	SDL_UnlockCursor();
 
 	/* If we failed setting a video mode, return NULL... (Uh Oh!) */
 	if ( mode == NULL ) {
@@ -738,14 +720,6 @@ SDL_Surface * SDL_SetVideoMode (int width, int height, int bpp, Uint32 flags)
 	if ( ! video->info.wm_available ) {
 		mode->flags |= SDL_NOFRAME;
 	}
-
-	/* Reset the mouse cursor and grab for new video mode */
-	SDL_SetCursor(NULL);
-	if ( video->UpdateMouse ) {
-		video->UpdateMouse(this);
-	}
-	SDL_WM_GrabInput(saved_grab);
-	SDL_GetRelativeMouseState(NULL, NULL); /* Clear first large delta */
 
 #if SDL_VIDEO_OPENGL
 	/* Load GL symbols (before MakeCurrent, where we need glGetString). */
@@ -1037,21 +1011,10 @@ void SDL_UpdateRects (SDL_Surface *screen, int numrects, SDL_Rect *rects)
 				pal->colors = video->physpal->colors;
 			}
 		}
-		if ( SHOULD_DRAWCURSOR(SDL_cursorstate) ) {
-			SDL_LockCursor();
-			SDL_DrawCursor(SDL_ShadowSurface);
-			for ( i=0; i<numrects; ++i ) {
+		for ( i=0; i<numrects; ++i ) {
 				SDL_LowerBlit(SDL_ShadowSurface, &rects[i], 
 						SDL_VideoSurface, &rects[i]);
 			}
-			SDL_EraseCursor(SDL_ShadowSurface);
-			SDL_UnlockCursor();
-		} else {
-			for ( i=0; i<numrects; ++i ) {
-				SDL_LowerBlit(SDL_ShadowSurface, &rects[i], 
-						SDL_VideoSurface, &rects[i]);
-			}
-		}
 		if ( saved_colors ) {
 			pal->colors = saved_colors;
 		}
@@ -1104,14 +1067,7 @@ int SDL_Flip(SDL_Surface *screen)
 		rect.y = 0;
 		rect.w = screen->w;
 		rect.h = screen->h;
-		if ( SHOULD_DRAWCURSOR(SDL_cursorstate) ) {
-			SDL_LockCursor();
-			SDL_DrawCursor(SDL_ShadowSurface);
-			SDL_LowerBlit(SDL_ShadowSurface, &rect,
-					SDL_VideoSurface, &rect);
-			SDL_EraseCursor(SDL_ShadowSurface);
-			SDL_UnlockCursor();
-		} else {
+		{
 			SDL_LowerBlit(SDL_ShadowSurface, &rect,
 					SDL_VideoSurface, &rect);
 		}
@@ -1225,7 +1181,6 @@ static int SetPalette_physical(SDL_Surface *screen,
 			*/
 			;
 		}
-		SDL_CursorPaletteChanged();
 	}
 	return gotall;
 }
@@ -1327,18 +1282,12 @@ void SDL_VideoQuit (void)
 		SDL_VideoDevice *video = current_video;
 		SDL_VideoDevice *this  = current_video;
 
-		/* Halt event processing before doing anything else */
-		SDL_StopEventLoop();
 
 		/* Clean up allocated window manager items */
 		if ( SDL_PublicSurface ) {
 			SDL_PublicSurface = NULL;
 		}
-		SDL_CursorQuit();
-
-		/* Just in case... */
-		SDL_WM_GrabInputOff();
-
+	
 		/* Clean up the system video */
 		video->VideoQuit(this);
 
@@ -1769,30 +1718,6 @@ static void CreateMaskFromColorKeyOrAlpha(SDL_Surface *icon, Uint8 *mask, int fl
  */
 void SDL_WM_SetIcon (SDL_Surface *icon, Uint8 *mask)
 {
-	SDL_VideoDevice *video = current_video;
-	SDL_VideoDevice *this  = current_video;
-
-	if ( icon && video->SetIcon ) {
-		/* Generate a mask if necessary, and create the icon! */
-		if ( mask == NULL ) {
-			int mask_len = icon->h*(icon->w+7)/8;
-			int flags = 0;
-			mask = (Uint8 *)SDL_malloc(mask_len);
-			if ( mask == NULL ) {
-				return;
-			}
-			SDL_memset(mask, ~0, mask_len);
-			if ( icon->flags & SDL_SRCCOLORKEY ) flags |= 1;
-			if ( icon->flags & SDL_SRCALPHA ) flags |= 2;
-			if( flags ) {
-				CreateMaskFromColorKeyOrAlpha(icon, mask, flags);
-			}
-			video->SetIcon(video, icon, mask);
-			SDL_free(mask);
-		} else {
-			video->SetIcon(this, icon, mask);
-		}
-	}
 }
 
 /*
@@ -1811,24 +1736,6 @@ static SDL_GrabMode SDL_WM_GrabInputRaw(SDL_GrabMode mode)
 	}
 
 	/* If the final grab mode if off, only then do we actually grab */
-#ifdef DEBUG_GRAB
-  printf("SDL_WM_GrabInputRaw(%d) ... ", mode);
-#endif
-	if ( mode == SDL_GRAB_OFF ) {
-		if ( video->input_grab != SDL_GRAB_OFF ) {
-			mode = video->GrabInput(this, mode);
-		}
-	} else {
-		if ( video->input_grab == SDL_GRAB_OFF ) {
-			mode = video->GrabInput(this, mode);
-		}
-	}
-	if ( mode != video->input_grab ) {
-		video->input_grab = mode;
-		if ( video->CheckMouseMode ) {
-			video->CheckMouseMode(this);
-		}
-	}
 #ifdef DEBUG_GRAB
   printf("Final mode %d\n", video->input_grab);
 #endif

@@ -77,74 +77,11 @@ const static char sdl_mousebtn[] = {
 };
 
 static void mouse_update(void) {
-    maple_device_t *dev;
-    mouse_state_t *state;
-	
-	static int prev_buttons;
-	int buttons,changed;
-	int i,dx,dy;
-	
-	//DC: Check if any mouse is connected
-	if(!(dev = maple_enum_type(0, MAPLE_FUNC_MOUSE)) ||
-       !(state = maple_dev_status(dev)))
-        return;
-	
-	buttons = state->buttons^0xff;
-	if (state->dz<0) buttons|=MOUSE_WHEELUP;
-	if (state->dz>0) buttons|=MOUSE_WHEELDOWN;
 
-	dx=state->dx>>__sdl_dc_mouse_shift;
-	dy=state->dy>>__sdl_dc_mouse_shift;
-	if (dx||dy)
-		SDL_PrivateMouseMotion(0,1,dx,dy);
-
-	changed = buttons^prev_buttons;
-	for(i=0;i<sizeof(sdl_mousebtn);i++) {
-		if (changed & sdl_mousebtn[i]) {
-			//Do not flip state.
-			SDL_PrivateMouseButton((buttons & sdl_mousebtn[i])?SDL_PRESSED:SDL_RELEASED,i,0,0);
-		}
-	}
-	prev_buttons = buttons;
 }
 
 static void keyboard_update(void) {
-	static kbd_state_t old_state;
-    kbd_state_t	*state;
-    maple_device_t *dev;
-    int shiftkeys;
-    SDL_keysym keysym;
-    int i;
 
-    if(!(dev = maple_enum_type(0, MAPLE_FUNC_KEYBOARD)))
-        return;
-
-    state = maple_dev_status(dev);
-
-    if(!state)
-        return;
-
-    shiftkeys = state->shift_keys ^ old_state.shift_keys;
-    for(i = 0; i < sizeof(sdl_shift); ++i) {
-        if((shiftkeys >> i) & 1) {
-            keysym.sym = sdl_shift[i];
-            SDL_PrivateKeyboard(((state->shift_keys >> i) & 1) ?
-                                SDL_PRESSED : SDL_RELEASED, &keysym);
-        }
-    }
-
-    for(i = 0; i < sizeof(sdl_key); ++i) {
-        if(state->matrix[i] != old_state.matrix[i]) {
-            int key = sdl_key[i];
-            if(key) {
-                keysym.sym = key;
-                SDL_PrivateKeyboard(state->matrix[i] ?
-                                    SDL_PRESSED : SDL_RELEASED, &keysym);
-            }
-        }
-    }
-
-    old_state = *state;
 }
 
 static __inline__ Uint32 myGetTicks(void)
@@ -154,14 +91,7 @@ static __inline__ Uint32 myGetTicks(void)
 
 void DC_PumpEvents(_THIS)
 {
-	static Uint32 last_time=0;
-	Uint32 now=myGetTicks();
-	if (now-last_time>MIN_FRAME_UPDATE)
-	{
-		keyboard_update();
-		mouse_update();
-		last_time=now;
-	}
+
 }
 
 void DC_InitOSKeymap(_THIS)

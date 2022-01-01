@@ -93,28 +93,28 @@ typedef unsigned long long uint64_t;
 #define HAVE_VSNPRINTF	1
 
 /* Enable various audio drivers */
-#define SDL_AUDIO_DRIVER_DC	1
-#define SDL_AUDIO_DRIVER_DISK	1
-#define SDL_AUDIO_DRIVER_DUMMY	1
+//#define SDL_AUDIO_DRIVER_DC	1
+//#define SDL_AUDIO_DRIVER_DISK	1
+//#define SDL_AUDIO_DRIVER_DUMMY	1
 
 /* Enable various cdrom drivers */
-#define SDL_CDROM_DC	1
+//#define SDL_CDROM_DC	1
 
 /* Enable various input drivers */
-#define SDL_JOYSTICK_DC	1
+//#define SDL_JOYSTICK_DC	1
 
 /* Enable various shared object loading systems */
-#define SDL_LOADSO_DUMMY	1
+//#define SDL_LOADSO_DUMMY	1
 
 /* Enable various threading systems */
-#define SDL_THREAD_DC	1
+//#define SDL_THREAD_DC	1
 
 /* Enable various timer systems */
-#define SDL_TIMER_DC	1
+//#define SDL_TIMER_DC	1
 
 /* Enable various video drivers */
 #define SDL_VIDEO_DRIVER_DC	1
-#define SDL_VIDEO_DRIVER_DUMMY	1
+//#define SDL_VIDEO_DRIVER_DUMMY	1
 
 
 #include "memfuncs.h"
